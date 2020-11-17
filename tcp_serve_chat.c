@@ -84,6 +84,7 @@ int main() {
         int id ;
         int login;
         int user2_id;
+        int request;
     };
     M mem[10];
     int member_count =0;
@@ -129,6 +130,7 @@ int main() {
                     send(socket_client, mes, strlen(mes), 0);
                     mem[member_count].id = socket_client;
                     mem[member_count].login = -1;
+                    mem[member_count].user2_id = -2;
                     mem[member_count].user2_id = -2;
                     member_count ++;
 
@@ -177,8 +179,25 @@ int main() {
                             strcat(message,mem[i].name);
                             strcat(message," want to play with you!\nPlease enter \"Yes\" if you agree(others mean NO)\n");
                             send(mem[k].id,message,strlen(message),0);
-                            mem[i].user2_id = mem[k].id;      
-                            mem[k].user2_id = mem[i].id;                     
+                            send(mem[i].id,"wait...",strlen("wait..."),0);
+                            mem[k].user2_id = -3; // recevive request
+                            mem[i].user2_id = -4; // send request
+                            mem[k].request = mem[i].id; // record request id
+                            continue;                    
+                        }
+                        else if(mem[k].user2_id == -4){
+                            send(mem[k].id,"wait...",strlen("wait..."),0);
+                            continue;
+                        }
+                        else if(mem[k].user2_id == -3){
+                            char temp_name[100]={'\0'};
+                            strncat(temp_name , read,bytes_received-1);
+                            //if agree request
+                            if(strncmp(temp_name,"Yes",bytes_received-1) == 0){
+                                mem[k].user2_id = mem[k].request; 
+                            }
+
+                            continue;
                         }
                         else if(strncmp(read,"show!\n",bytes_received) == 0){
                             send(i,"Players:\n",strlen("Players:\n"),0);
