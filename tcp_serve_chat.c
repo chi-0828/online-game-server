@@ -24,18 +24,56 @@
 
 #include "chap03.h"
 #include <ctype.h>
-
-int main() {
-
-#if defined(_WIN32)
-    WSADATA d;
-    if (WSAStartup(MAKEWORD(2, 2), &d)) {
-        fprintf(stderr, "Failed to initialize.\n");
+int check(char *play_ground){
+    //15 17 19
+    //37 39 41
+    //59 61 63
+    if(play_ground[14]==play_ground[16]&&play_ground[14]==play_ground[18]&&play_ground[14]!=' ')
+        return 1;
+    if(play_ground[36]==play_ground[38]&&play_ground[38]==play_ground[40]&&play_ground[40]!=' ')
+        return 2;
+    if(play_ground[58]==play_ground[60]&&play_ground[62]==play_ground[60]&&play_ground[60]!=' ')
+        return 3;
+    if(play_ground[14]==play_ground[36]&&play_ground[14]==play_ground[58]&&play_ground[14]!=' ')
+        return 4;
+    if(play_ground[38]==play_ground[16]&&play_ground[16]==play_ground[60]&&play_ground[16]!=' ')
+        return 5;
+    if(play_ground[18]==play_ground[40]&&play_ground[18]==play_ground[62]&&play_ground[18]!=' ')
+        return 6;
+    if(play_ground[14]==play_ground[38]&&play_ground[38]==play_ground[62]&&play_ground[14]!=' ')
+        return 7;
+    if(play_ground[18]==play_ground[38]&&play_ground[38]==play_ground[58]&&play_ground[18]!=' ')
+        return 8;
+    return -1;
+}
+int game(int c,int r,char A ,char *play_ground){
+    int col_count =0;
+    int row_count =0;
+    r--;c--;
+    for(int i=0;i<strlen(play_ground);i++){
+        if((play_ground[i] == 'O'||play_ground[i] == 'X'||play_ground[i] == ' ')&&(play_ground[i+1]=='|'||play_ground[i-1]=='|')){
+            if(col_count == c&& row_count == r){
+                play_ground[i] = A;
+                break;
+            }
+            else{
+                if((col_count+1)%3 == 0 &&col_count!=0){
+                    row_count++;
+                    col_count = 0;
+                    continue;
+                }
+                col_count++;
+            }
+        }
+    }
+    int state = check(play_ground);
+    fprintf(stderr,"%d\n",state);
+    if(state!= -1){
         return 1;
     }
-#endif
-
-
+    return 0;
+}
+int main() {
     printf("Configuring local address...\n");
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -85,9 +123,25 @@ int main() {
         int login;
         int user2_id;
         int request;
+        int court;
+        char A;
     };
     M mem[10];
     int member_count =0;
+    //15 17 19
+    //37 39 41
+    //59 61 63
+    char play_borad[100] = {'*','*','*','*','*','*','*','*','*','*','\n',
+                        '*','1',' ',' ','|',' ','|',' ',' ','*','\n',
+                        '*',' ','-','-','-','-','-','-','-','*','\n',
+                        '*','2',' ',' ','|',' ','|',' ',' ','*','\n',
+                        '*',' ','-','-','-','-','-','-','-','*','\n',
+                        '*','3',' ',' ','|',' ','|',' ',' ','*','\n',
+                        '*',' ',' ','1',' ','2',' ','3',' ','*','\n',
+                        '*','*','*','*','*','*','*','*','*','*','\n','\0'};
+    char play_ground[10][100]={'\0'};
+    int play_grpund_turn[10] ;
+    int court_cout = 0;
     while(1) {
         fd_set reads;
         reads = master;
@@ -131,7 +185,9 @@ int main() {
                     mem[member_count].id = socket_client;
                     mem[member_count].login = -1;
                     mem[member_count].user2_id = -2;
-                    mem[member_count].user2_id = -2;
+                    mem[member_count].request = -1;
+                    mem[member_count].court = -1;
+                    memset(mem[member_count].name,'\0',200);
                     member_count ++;
 
                 } else {
@@ -162,31 +218,64 @@ int main() {
                                 break;
                             }
                         }
-                        if(mem[k].user2_id == -1){
+                        // in game
+                        if(mem[k].user2_id >= 0){
+                            if(play_grpund_turn[mem[k].court] != mem[k].id){
+                                send(i,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
+                                send(i,"Please wait, not your turn\n",strlen("Please wait, not your turn\n"),0);
+                                continue;
+                            }
+                            int c,r;
+                            sscanf(read,"%d%d",&r,&c);
+                            if(r>3 || r<0 || c>3 || c<0){
+                                send(i,"Please enter correct location\n",strlen("Please enter correct location\n"),0);
+                                continue;
+                            }
+                            int state = game(c,r,mem[k].A,play_ground[mem[k].court]);
+                            send(i,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
+                            send(mem[k].user2_id,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
+                            if(state != 0){
+                                send(i,"NICE! YOU WIN!\n",strlen("NICE! YOU WIN!\n"),0);
+                                send(mem[k].user2_id,"GAME OVER , YOU LOOSE!\n",strlen("GAME OVER , YOU LOOSE!\n"),0);
+                                continue;
+                            }
+                            play_grpund_turn[mem[k].court] = mem[k].user2_id;
+                            send(mem[k].user2_id,"Your turn\n",strlen("Your turn\n"),0);
+                            continue;
+                        }
+                        else if(mem[k].user2_id == -1){
                             char temp_name[100]={'\0'};
                             strncat(temp_name , read,bytes_received-1);
-                            for(k =0;k<member_count;k++){
-                                if(strncmp(mem[k].name,temp_name,bytes_received-1) == 0){
+                            int l;
+                            int fail = 0;
+                            for( l=0;l<member_count;l++){
+                                if(strncmp(mem[l].name,temp_name,bytes_received-1) == 0){
+                                    if(mem[l].user2_id>0)
+                                        fail = 1;
                                     break;
                                 }
                             }   
-                            if(k == member_count){
+                            if(fail){
+                                send(i,"this player is already in game\n",strlen("this player is already in game\n"),0);
+                                continue;
+                            }
+                            if(l == member_count){
                                 send(i,"no this player\n",strlen("no this player\n"),0);
                                 continue;
                             }
                             //request game
                             char message[100]={'\0'}; 
-                            strcat(message,mem[i].name);
+                            strncat(message,mem[l].name,strlen(mem[l].name)-1);
                             strcat(message," want to play with you!\nPlease enter \"Yes\" if you agree(others mean NO)\n");
-                            send(mem[k].id,message,strlen(message),0);
-                            send(mem[i].id,"wait...",strlen("wait..."),0);
-                            mem[k].user2_id = -3; // recevive request
-                            mem[i].user2_id = -4; // send request
-                            mem[k].request = mem[i].id; // record request id
+                            send(mem[l].id,message,strlen(message),0);
+                            send(mem[k].id,"wait...\n",strlen("wait...\n"),0);
+                            mem[l].user2_id = -3; // recevive request
+                            mem[k].user2_id = -4; // send request
+                            mem[l].request = mem[k].id; // record request id
                             continue;                    
                         }
                         else if(mem[k].user2_id == -4){
-                            send(mem[k].id,"wait...",strlen("wait..."),0);
+                            send(mem[k].id,"wait...\n",strlen("wait...\n"),0);
                             continue;
                         }
                         else if(mem[k].user2_id == -3){
@@ -194,7 +283,45 @@ int main() {
                             strncat(temp_name , read,bytes_received-1);
                             //if agree request
                             if(strncmp(temp_name,"Yes",bytes_received-1) == 0){
+                                char message[100]={'\0'}; 
+                                strncat(message,mem[k].name,strlen(mem[k].name)-1);
+                                strcat(message," agree\n");
+                                send(mem[k].request,message,strlen(message),0);
+                                int l;
                                 mem[k].user2_id = mem[k].request; 
+                                for(l=0;l,member_count;l++){
+                                    if(mem[l].id == mem[k].request)
+                                        break;
+                                }
+                                mem[l].user2_id = mem[k].id;
+                                mem[k].A = 'X';
+                                send(mem[k].id,play_borad,strlen(play_borad),0);
+                                send(mem[k].id,"You are \"X\"\n",strlen("You are \"X\"\n"),0);
+                                
+                                mem[l].A = 'O';
+                                send(mem[l].id,play_borad,strlen(play_borad),0);
+                                send(mem[l].id,"You are \"O\"\nYour turn\n",strlen("You are \"O\"\nYour turn\n"),0);
+                                
+                                mem[k].court = court_cout;
+                                mem[l].court = court_cout;
+                                strcat(play_ground[court_cout],play_borad);
+                                play_grpund_turn[court_cout] = mem[l].id;
+                                court_cout++;
+                            }
+                            //reject
+                            else{
+                                char message[100]={'\0'}; 
+                                strncat(message,mem[k].name,strlen(mem[k].name)-1);
+                                strcat(message," reject your request\n");
+                                send(mem[k].request,message,strlen(message),0);
+                                
+                                int l;
+                                for(l=0;l,member_count;l++){
+                                    if(mem[l].id == mem[k].request)
+                                        break;
+                                }
+                                mem[l].user2_id = -2;
+                                mem[k].request = -1;
                             }
 
                             continue;
@@ -205,6 +332,7 @@ int main() {
                                 fprintf(stderr,"%s",mem[l].name);
                                 send(i,mem[l].name,strlen(mem[l].name),0);
                             }
+                            continue;
                         }
                         else if(strncmp(read,"play!\n",bytes_received) == 0){
                             send(i,"Please enter user name who you want to play with:\n",strlen("Please enter user name who you want to play with:\n"),0);
@@ -214,6 +342,7 @@ int main() {
                                 }
                             }
                             mem[k].user2_id = -1;
+                            continue;
                         }
                     }
                 }
