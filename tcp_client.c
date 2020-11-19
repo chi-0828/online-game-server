@@ -84,7 +84,9 @@ int main(int argc, char *argv[]) {
 
     printf("Connected.\n");
     printf("To send data, enter text followed by enter.\n");
-
+    //red
+    char color[100] = {'\0'};
+    strcat(color,"\033[0;31m");
     while(1) {
 
         fd_set reads;
@@ -110,23 +112,66 @@ int main(int argc, char *argv[]) {
                 printf("Connection closed by peer.\n");
                 break;
             }
-            fprintf(stderr,"%s",read);
-            int count = 0;
-            read[1] = '\0';
-            int id = atoi(read);
-
-            //printf("i'm id %d\n",id);
+            int count=0;
+            for(int i=0;i<bytes_received;i++){
+                if(read[i] == '-')
+                    count++;
+            }
+            if(count>10){
+                int count = 0;
+                printf("%s",color); 
+                for(int k =0;k<bytes_received;k++){
+                    if(read[k] == '*')
+                        count++;
+                    if(read[k] == 'X'  && count<32)
+                        printf("\033[0;36m");
+                    if(read[k] == 'O' && count<32)
+                        printf("\033[0;32m");
+                    printf("%c",read[k]);
+                    if(count<32)
+                        printf("%s",color); 
+                    if(count == 32)
+                        printf("\033[0m");
+                }               
+            }
+            else if(strncmp(read,"chcolor",7) == 0){
+                char name[10] = {'\0'};
+                for(int i=8;i<bytes_received-1;i++){
+                    name[i-8] = read[i];
+                }
+                if(strncmp(name,"yellow",6) == 0){
+                    memset(color,'\0',100);
+                    strcat(color,"\033[0;33m");
+                }
+                if(strncmp(name,"green",6) == 0){
+                    memset(color,'\0',100);
+                    strcat(color,"\033[0;32m");
+                }
+                if(strncmp(name,"red",6) == 0){
+                    memset(color,'\0',100);
+                    strcat(color,"\033[0;31m");
+                }
+                if(strncmp(name,"blue",6) == 0){
+                    memset(color,'\0',100);
+                    strcat(color,"\033[0;34m");
+                }
+                printf("%s",color); 
+                printf("DONE!!!!!");
+                printf("\033[0m");
+                printf("\n");
+            }
+            else{
+                printf("\033[0m"); 
+                fwrite(read,bytes_received,1,stderr);                 
+            }
             
-            printf("Received (%d bytes): %.*s",
-                    bytes_received, bytes_received, read);
         }
         if(FD_ISSET(0, &reads)) {
             char read[4096];
             memset(read,'\0',4096);
             if (!fgets(read, 4096, stdin)) break;
-            printf("Sending: %s", read);
             int bytes_sent = send(socket_peer, read, strlen(read), 0);
-            printf("Sent %d bytes.\n", bytes_sent);
+
         }
     } //end while(1)
 

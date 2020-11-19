@@ -53,6 +53,8 @@ int game(int c,int r,char A ,char *play_ground){
     for(int i=0;i<strlen(play_ground);i++){
         if((play_ground[i] == 'O'||play_ground[i] == 'X'||play_ground[i] == ' ')&&(play_ground[i+1]=='|'||play_ground[i-1]=='|')){
             if(col_count == c&& row_count == r){
+                // this position already had O or X
+                if(play_ground[i] != ' ') return -1;
                 play_ground[i] = A;
                 break;
             }
@@ -74,6 +76,26 @@ int game(int c,int r,char A ,char *play_ground){
     return 0;
 }
 int main() {
+    typedef struct User U;
+    struct User{
+        char *name;
+        char *pass;
+        int state ;
+    };
+    U user[4];
+    int user_count = 4;
+    user[0].name = "gary";
+    user[1].name = "mark";
+    user[2].name = "jj";
+    user[3].name = "jack";
+    user[0].pass = "111";
+    user[1].pass = "111";
+    user[2].pass = "111";
+    user[3].pass = "111";
+    user[0].state = 0;
+    user[1].state = 0;
+    user[2].state = 0;
+    user[3].state = 0;
     printf("Configuring local address...\n");
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -125,6 +147,10 @@ int main() {
         int request;
         int court;
         char A;
+        char his[1000];
+        char passward[100];
+        int audience;
+        int watch;
     };
     M mem[10];
     int member_count =0;
@@ -187,7 +213,11 @@ int main() {
                     mem[member_count].user2_id = -2;
                     mem[member_count].request = -1;
                     mem[member_count].court = -1;
+                    mem[member_count].audience = -1;
+                    mem[member_count].watch = -1;
                     memset(mem[member_count].name,'\0',200);
+                    memset(mem[member_count].his,'\0',1000);
+                    memset(mem[member_count].passward,'\0',100);
                     member_count ++;
 
                 } else {
@@ -202,9 +232,57 @@ int main() {
                     //login
                     if(mem[k].login == -1){
                         //strcat(mem[k].name , read);
-                        strncat(mem[k].name , read,bytes_received);
-                        printf("%s\n",mem[k].name );
-                        mem[k].login = 1;
+                        int find =0;
+                        for(int j=0;j<user_count;j++){
+                            if(strncmp(read,user[j].name,strlen(user[j].name))==0 ){
+                                if(strcmp(read,"\n") == 0){
+                                    break;
+                                }
+                                if(user[j].state == 1){
+                                    find = -1;
+                                    break;
+                                }
+                                strcat(mem[k].passward ,user[j].pass);
+                                user[j].state = 1;
+                                find =1;
+                                break;
+                            }
+                        }
+                        
+                        if(find == 1){
+                            strncat(mem[k].name ,read,bytes_received);
+                            printf("%s\n",mem[k].name );
+                            mem[k].login = 1;
+                            send(mem[k].id,"password:\n",strlen("password:\n"),0);
+                            continue;
+                        }
+                        else if(find == -1){
+                            send(mem[k].id,"you already login at other device\n",strlen("you already login at other device\n"),0);
+                            continue;
+                        }
+                        else{
+                            send(mem[k].id,"no user name\ncreat account please enter \"signup\"\n",strlen("no user name\ncreat account please enter \"signup\"\n"),0);
+                            continue;
+                        }
+                    }
+                    else if(mem[k].login == 1){
+                        //strcat(mem[k].name , read);
+                        if(strncmp(mem[k].passward,read,strlen(mem[k].passward))==0){
+                            if(strcmp(read,"\n") == 0){
+                                send(mem[k].id,"wrong password\n",strlen("wrong password\n"),0);
+                                 continue;
+                            }
+                            mem[k].login = 2;
+                            send(mem[k].id,"login success\n",strlen("login success\n"),0);
+                            usleep(1);
+                            char *mes = "\"chcolor -<color>\" : change output color\n       option : blue yellow red green\n\"play!\" : invite one player join a game\n\"show -user\" : show all players who are online\n\"show -game\" : show all players who are playing game\n\"watch -<user>\" : Watch the battle\n\"exit!\" : logout\n\"history\" : get info of last game\n";
+                            send(i,mes,strlen(mes),0);
+                            continue;
+                        }
+                        else{
+                            send(mem[k].id,"wrong password\n",strlen("wrong password\n"),0);
+                            continue;
+                        }
                     }
                     // play game
                     else {
@@ -218,25 +296,113 @@ int main() {
                                 break;
                             }
                         }
+                        if(strncmp(read,"chcolor",7) == 0){
+                            char name[10] = {'\0'};
+                            for(int i=9;i<bytes_received-1;i++){
+                                name[i-9] = read[i];
+                            }
+                            char mes[100] = {'\0'};
+                            sprintf(mes,"chcolor %s\n",name);
+                            send(i,mes,strlen(mes),0);
+                            continue;
+                        }
                         // in game
                         if(mem[k].user2_id >= 0){
+                            //again
+                            if(mem[k].request == -2){
+                                mem[k].request = -3;
+                                //agree
+                                if(strncmp(read,"Y\n",bytes_received) == 0){
+                                    int l;
+                                    for(l=0;l,member_count;l++){
+                                        if(mem[l].id == mem[k].user2_id)
+                                            break;
+                                    }
+                                    if(mem[l].request == -2){
+                                        send(mem[k].id,"wait for your opponent\n",strlen("wait for your opponent\n"),0);
+                                        continue;
+                                    }
+                                    send(mem[k].id,play_borad,strlen(play_borad),0);
+                                    usleep(1);
+                                    send(mem[l].id,play_borad,strlen(play_borad),0);
+                                    memset(mem[l].his,'\0',1000);
+                                    memset(mem[k].his,'\0',1000);
+                                    memset(play_ground[mem[k].court],'\0',100);
+                                    strcat(play_ground[mem[k].court],play_borad);
+                                    play_grpund_turn[mem[k].court] = mem[k].id;
+                                    send(mem[k].id,"Your turn\n",strlen("Your turn\n"),0);
+                                    continue;
+                                }
+                                //reject
+                                else {
+                                    int l;
+                                    for(l=0;l,member_count;l++){
+                                        if(mem[l].id == mem[k].user2_id)
+                                            break;
+                                    }
+                                    usleep(1);
+                                    send(mem[k].id,"enter \"play!\" to have fun with others\nIf you want to see last game history, enter \"history\"\n",strlen("enter \"play!\" to have fun with others\nIf you want to see last game history, enter \"history\"\n"),0);
+                                    usleep(1);
+                                    send(mem[k].user2_id,"enter \"play!\" to have fun with others\nIf you want to see last game history, enter \"history\"\n",strlen("enter \"play!\" to have fun with others\nIf you want to see last game history, enter \"history\"\n"),0);
+                                    mem[k].user2_id = -2;
+                                    mem[k].request = -1;
+                                    mem[k].court = -1;
+                                    mem[l].user2_id = -2;
+                                    mem[l].request = -1;
+                                    mem[l].court = -1;
+                                    continue;
+                                }
+                            }
                             if(play_grpund_turn[mem[k].court] != mem[k].id){
-                                send(i,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
+                                //send(i,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
+                                usleep(1);
                                 send(i,"Please wait, not your turn\n",strlen("Please wait, not your turn\n"),0);
                                 continue;
                             }
-                            int c,r;
+                            int c = -1,r =-1;
                             sscanf(read,"%d%d",&r,&c);
                             if(r>3 || r<0 || c>3 || c<0){
+                                usleep(1);
                                 send(i,"Please enter correct location\n",strlen("Please enter correct location\n"),0);
                                 continue;
                             }
                             int state = game(c,r,mem[k].A,play_ground[mem[k].court]);
+                            int l;
+                            for(l=0;l,member_count;l++){
+                                if(mem[l].id == mem[k].user2_id)
+                                    break;
+                            }
+                            strcat(mem[k].his,"\nYOU : \n");
+                            strcat(mem[k].his,play_ground[mem[k].court]);
+                            strcat(mem[l].his,"\nOPPONENT : \n");
+                            strcat(mem[l].his,play_ground[mem[k].court]);
                             send(i,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
                             send(mem[k].user2_id,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
-                            if(state != 0){
-                                send(i,"NICE! YOU WIN!\n",strlen("NICE! YOU WIN!\n"),0);
-                                send(mem[k].user2_id,"GAME OVER , YOU LOOSE!\n",strlen("GAME OVER , YOU LOOSE!\n"),0);
+                            if(mem[k].audience>0){
+                                send(mem[k].audience,mem[k].name,strlen(mem[k].name),0);
+                                usleep(1);
+                                send(mem[k].audience,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
+                            }
+                            else if(mem[l].audience>0){
+                                send(mem[l].audience,mem[k].name,strlen(mem[k].name),0);
+                                usleep(1);
+                                send(mem[l].audience,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
+                            }
+                            if(state > 0){
+                                send(i,"NICE! YOU WIN!\nAgain?(Y/N)\n",strlen("NICE! YOU WIN!\nAgain?(Y/N)\n"),0);
+                                usleep(1);
+                                send(mem[k].user2_id,"GAME OVER , YOU LOOSE!\nAgain?(Y/N)\n",strlen("GAME OVER , YOU LOOSE!\nAgain?(Y/N)\n"),0);
+                                mem[k].request = -2;
+                                int l;
+                                for(l=0;l,member_count;l++){
+                                    if(mem[l].id == mem[k].user2_id)
+                                        break;
+                                }
+                                mem[l].request = -2;
+                                continue;
+                            }
+                            else if(state < 0){
+                                send(i,"Please choose another position\n",strlen("Please choose another position\n"),0);
                                 continue;
                             }
                             play_grpund_turn[mem[k].court] = mem[k].user2_id;
@@ -249,14 +415,20 @@ int main() {
                             int l;
                             int fail = 0;
                             for( l=0;l<member_count;l++){
-                                if(strncmp(mem[l].name,temp_name,bytes_received-1) == 0){
+                                if(strncmp(mem[l].name,temp_name,strlen(temp_name)) == 0){
                                     if(mem[l].user2_id>0)
                                         fail = 1;
+                                    if(mem[l].id == mem[k].id)
+                                        fail = 2;
                                     break;
                                 }
                             }   
-                            if(fail){
+                            if(fail == 1){
                                 send(i,"this player is already in game\n",strlen("this player is already in game\n"),0);
+                                continue;
+                            }
+                            if(fail == 2){
+                                send(i,"You can't play with yourself\n",strlen("You can't play with yourself"),0);
                                 continue;
                             }
                             if(l == member_count){
@@ -265,7 +437,7 @@ int main() {
                             }
                             //request game
                             char message[100]={'\0'}; 
-                            strncat(message,mem[l].name,strlen(mem[l].name)-1);
+                            strncat(message,mem[k].name,strlen(mem[k].name)-1);
                             strcat(message," want to play with you!\nPlease enter \"Yes\" if you agree(others mean NO)\n");
                             send(mem[l].id,message,strlen(message),0);
                             send(mem[k].id,"wait...\n",strlen("wait...\n"),0);
@@ -297,10 +469,13 @@ int main() {
                                 mem[k].A = 'X';
                                 send(mem[k].id,play_borad,strlen(play_borad),0);
                                 send(mem[k].id,"You are \"X\"\n",strlen("You are \"X\"\n"),0);
-                                
                                 mem[l].A = 'O';
+                                usleep(1);
                                 send(mem[l].id,play_borad,strlen(play_borad),0);
                                 send(mem[l].id,"You are \"O\"\nYour turn\n",strlen("You are \"O\"\nYour turn\n"),0);
+
+                                memset(mem[l].his,'\0',1000);
+                                memset(mem[k].his,'\0',1000);
                                 
                                 mem[k].court = court_cout;
                                 mem[l].court = court_cout;
@@ -316,7 +491,7 @@ int main() {
                                 send(mem[k].request,message,strlen(message),0);
                                 
                                 int l;
-                                for(l=0;l,member_count;l++){
+                                for(l=0;l<member_count;l++){
                                     if(mem[l].id == mem[k].request)
                                         break;
                                 }
@@ -326,11 +501,48 @@ int main() {
 
                             continue;
                         }
-                        else if(strncmp(read,"show!\n",bytes_received) == 0){
+                        else if(mem[k].watch > 0){
+                            if(strncmp(read,"out\n",bytes_received) == 0){
+                                for(int l=0;l<member_count;l++){
+                                    if(mem[l].id == mem[k].watch){
+                                        mem[l].audience = -1;
+                                        break;
+                                    }
+                                }
+                                mem[k].watch = -1;
+                                send(i,"exit watching\n",strlen("exit watching\n"),0);
+                                continue;
+                            }
+                            send(i,"you can enter \"out\" to stop watching\n",strlen("you can enter \"out\" to stop watching\n"),0);
+                            continue;
+                        }
+                        else if(strncmp(read,"show -user\n",bytes_received) == 0){
                             send(i,"Players:\n",strlen("Players:\n"),0);
                             for(int l=0;l<member_count;l++){
                                 fprintf(stderr,"%s",mem[l].name);
                                 send(i,mem[l].name,strlen(mem[l].name),0);
+                            }
+                            continue;
+                        }
+                        else if(strncmp(read,"show -game\n",bytes_received) == 0){
+                            send(i,"Players:\n",strlen("Players:\n"),0);
+                            char mes[100] = {'\0'};
+                            for(int l=0;l<member_count;l++){
+                                if(mem[l].user2_id>0){
+                                    int j=0;
+                                    for(j=0;j<member_count;j++){
+                                        if(mem[j].id == mem[l].user2_id){
+                                            char name1[10] = {'\0'};
+                                            char name2[10] = {'\0'};
+                                            strncat(name1,mem[l].name,strlen(mem[l].name)-1);
+                                            strncat(name2,mem[j].name,strlen(mem[j].name)-1);
+                                            sprintf(mes,"%s vs %s\n",name1,name2);
+                                            break;
+                                        }
+                                    }
+                                    send(i,mes,strlen(mes),0);
+                                    memset(mes,'\0',100);
+                                }
                             }
                             continue;
                         }
@@ -342,6 +554,51 @@ int main() {
                                 }
                             }
                             mem[k].user2_id = -1;
+                            continue;
+                        }
+                        else if(strncmp(read,"history\n",bytes_received) == 0){
+                            FILE *his;
+                            char buffer[200];
+                            
+                            char name[100] = {'\0'};
+                            strcat(name,"./record/history_");
+                            strncat(name,mem[k].name,strlen(mem[k].name)-1);
+                            strcat(name,".txt");
+                            his = fopen(name,"w");
+                            setvbuf(his, buffer, _IONBF, 0);
+                            if(!his){
+                                send(i,"Download error\n",strlen("Download error\n"),0);
+                                printf("%s",name);
+                                continue;
+                            }
+                            int s = fwrite(mem[k].his,1,strlen(mem[k].his),his);
+                            fwrite(mem[k].his,1,strlen(mem[k].his),stderr);
+                            printf("%d\n",s);
+                            if(s>0)
+                                send(i,"Record file is loacted at ./record/\n",strlen("Record file is loacted at ./record/\n"),0);
+                            else
+                                send(i,"Download error\n",strlen("Download error\n"),0);
+                            continue;
+                        }
+                        else if(strncmp(read,"watch",5) == 0){
+                            send(i,"you can enter \"out\" to stop watching\n",strlen("you can enter \"out\" to stop watching\n"),0);
+                            char name[10] = {'\0'};
+                            for(int i=7;i<bytes_received-1;i++){
+                                name[i-7] = read[i];
+                            }
+                            printf("%s\n",name);
+                            int l;
+                            for(l=0;l<member_count;l++){
+                                if(strncmp(name,mem[l].name,strlen(name)) == 0)
+                                    break;
+                            }
+                            mem[l].audience = mem[k].id;
+                            mem[k].watch = mem[l].id;
+                            continue;
+                        }
+                        else{
+                            char *mes = "\"chcolor -<color>\" : change output color\n       option : blue yellow red green\n\"play!\" : invite one player join a game\n\"show -user\" : show all players who are online\n\"show -game\" : show all players who are playing game\n\"watch -<user>\" : Watch the battle\n\"exit!\" : logout\n\"history\" : get info of last game\n";
+                            send(i,mes,strlen(mes),0);
                             continue;
                         }
                     }
