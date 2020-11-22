@@ -1,5 +1,7 @@
 #include "game.h"
 #include <ctype.h>
+#include <signal.h>
+int stop ;
 int check(char *play_ground){
     //15 17 19
     //37 39 41
@@ -51,7 +53,24 @@ int game(int c,int r,char A ,char *play_ground){
     }
     return 0;
 }
+void ctr_c_handler(){
+    printf("\nDo you want to close server?(Y/N)");
+    char ans;
+    scanf("%c",&ans);
+    if(ans == 'Y')
+        stop = 1;
+}
 int main() {
+    stop =0;
+    struct sigaction action;  
+    //signal(SIGINT,ctr_c_handler);
+    action.sa_handler = ctr_c_handler;    
+    sigemptyset(&action.sa_mask);    
+    action.sa_flags = 0;    
+    /* 设置SA_RESTART属性 */    
+    action.sa_flags |= SA_RESTART;    
+    sigaction(SIGINT, &action, NULL);
+
     typedef struct User U;
     struct User{
         char *name;
@@ -123,6 +142,8 @@ int main() {
         int request;
         int court;
         char A;
+        int win;
+        int loose;
         char his[1000];
         char passward[100];
         int audience;
@@ -145,11 +166,30 @@ int main() {
     int play_grpund_turn[20] ;
     int court_cout = 0;
     while(1) {
+        int no_gaming = 1;
+        if(stop){
+            for(int a=0;a<member_count;a++){
+                if(mem[a].user2_id>0){
+                    send(mem[a].id,"\e[1;1H\e[2Jsory! server will close after 3s\n",strlen("\e[1;1H\e[2Jsory! server will close after 3s\n"),0);
+                    continue;
+                }
+                send(mem[a].id,"\e[1;1H\e[2J",strlen("\e[1;1H\e[2J"),0);
+            }
+            for(int b=0;b<3;b++){
+                sleep(1);
+            }
+            break;
+        }
         fd_set reads;
         reads = master;
         if (select(max_socket+1, &reads, 0, 0, 0) < 0) {
-            fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
-            return 1;
+            if(errno != 4){
+                fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
+                return 1;
+            }
+            else{
+                continue;
+            }
         }
 
         SOCKET i;
@@ -191,6 +231,8 @@ int main() {
                     mem[member_count].court = -1;
                     mem[member_count].audience = -1;
                     mem[member_count].watch = -1;
+                    mem[member_count].win = 0;
+                    mem[member_count].loose = 0;
                     memset(mem[member_count].name,'\0',200);
                     memset(mem[member_count].his,'\0',1000);
                     memset(mem[member_count].passward,'\0',100);
@@ -447,10 +489,18 @@ int main() {
                                 usleep(1);
                                 send(mem[l].audience,play_ground[mem[k].court],strlen(play_ground[mem[k].court]),0);
                             }
+                            if(state > 0&&stop == 1){
+                                send(i,"NICE! YOU WIN!\n",strlen("NICE! YOU WIN!\n"),0);
+                                usleep(1);
+                                send(mem[k].user2_id,"GAME OVER , YOU LOOSE!\n",strlen("GAME OVER , YOU LOOSE!\n"),0);
+                                continue;
+                            }
                             if(state > 0){
                                 send(i,"NICE! YOU WIN!\nAgain?(Y/N)\n",strlen("NICE! YOU WIN!\nAgain?(Y/N)\n"),0);
+                                mem[k].win++;
                                 usleep(1);
                                 send(mem[k].user2_id,"GAME OVER , YOU LOOSE!\nAgain?(Y/N)\n",strlen("GAME OVER , YOU LOOSE!\nAgain?(Y/N)\n"),0);
+                                mem[l].loose++;
                                 mem[k].request = -2;
                                 int l;
                                 for(l=0;l,member_count;l++){
@@ -602,6 +652,42 @@ int main() {
                                     send(i,mes,strlen(mes),0);
                                     memset(mes,'\0',100);
                                 }
+                            }
+                            continue;
+                        }
+                        else if(strncmp(read,"rank\n",bytes_received) == 0){
+                            char rank_name[member_count][100] ;
+                            memset(rank_name,'\0',member_count*100);
+                            double rank_score[member_count] ;
+                            for(int l=0;l<member_count;l++){
+                                if(l == k)
+                                    strncat(rank_name[l],"\033[0;31m",strlen("\033[0;31m"));
+                                strncat(rank_name[l],mem[l].name,strlen(mem[l].name)-1);
+                                if(l == k)
+                                    strncat(rank_name[l],"\033[0m",strlen("\033[0m"));
+                                rank_score[l] =((double)mem[l].win/((double)mem[l].win+(double)mem[l].loose));
+                                printf("%f\n",rank_score[l]);
+                            }
+                            for(int l=0;l<member_count;l++){
+                                for(int j=l+1;j<member_count;j++){
+                                    if(rank_score[l] < rank_score[j]){
+                                        double temp = rank_score[l];
+                                        rank_score[l] = rank_score[j];
+                                        rank_score[j] = temp;
+                                        char temp_name[100] = {'\0'};
+                                        strcat(temp_name,rank_name[l]);
+                                        memset(rank_name[l],'\0',100);
+                                        strcat(rank_name[l],rank_name[j]);
+                                        memset(rank_name[j],'\0',100);
+                                        strcat(rank_name[j],temp_name);
+                                    }
+                                }
+                            }
+                            // send ranking
+                            for(int l=0;l<member_count;l++){
+                                char mes[100] = {'\0'};
+                                sprintf(mes,"rank:%d  name:%s --- Win rate: %f\n",l+1,rank_name[l],rank_score[l]);
+                                send(i,mes,strlen(mes),0);
                             }
                             continue;
                         }

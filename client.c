@@ -164,6 +164,16 @@ int main(int argc, char *argv[]) {
                 printf("%s\n", "");
                 printf("%s\n", "done");
             }
+            else if(strncmp(read,"\e[1;1H\e[2J",strlen("\e[1;1H\e[2J")) == 0){
+                printf("\033[0m"); 
+                fwrite(read,bytes_received,1,stderr);      
+                printf("3\n");
+                sleep(1);
+                printf("2\n");
+                sleep(1);
+                printf("1\n");
+                break;
+            }
             else if(strncmp(read,"login success\n",strlen("login success\n")) == 0){
                 size_t num_secs = 1, max_secs = 20;
                 printf("%s\n", "");
