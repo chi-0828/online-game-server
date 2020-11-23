@@ -6,6 +6,7 @@ int check(char *play_ground){
     //15 17 19
     //37 39 41
     //59 61 63
+    
     if(play_ground[14]==play_ground[16]&&play_ground[14]==play_ground[18]&&play_ground[14]!=' ')
         return 1;
     if(play_ground[36]==play_ground[38]&&play_ground[38]==play_ground[40]&&play_ground[40]!=' ')
@@ -22,6 +23,8 @@ int check(char *play_ground){
         return 7;
     if(play_ground[18]==play_ground[38]&&play_ground[38]==play_ground[58]&&play_ground[18]!=' ')
         return 8;
+    if(play_ground[14]!= ' '&&play_ground[16] != ' '&&play_ground[18] != ' '&&play_ground[36] != ' '&& play_ground[38] != ' '&&play_ground[40] != ' '&& play_ground[58] != ' ' && play_ground[60] != ' '&&play_ground[62]!=' ')
+        return 9;
     return -1;
 }
 int game(int c,int r,char A ,char *play_ground){
@@ -496,19 +499,34 @@ int main() {
                                 continue;
                             }
                             if(state > 0){
-                                send(i,"NICE! YOU WIN!\nAgain?(Y/N)\n",strlen("NICE! YOU WIN!\nAgain?(Y/N)\n"),0);
-                                mem[k].win++;
-                                usleep(1);
-                                send(mem[k].user2_id,"GAME OVER , YOU LOOSE!\nAgain?(Y/N)\n",strlen("GAME OVER , YOU LOOSE!\nAgain?(Y/N)\n"),0);
-                                mem[l].loose++;
-                                mem[k].request = -2;
-                                int l;
-                                for(l=0;l,member_count;l++){
-                                    if(mem[l].id == mem[k].user2_id)
-                                        break;
+                                if(state == 9){
+                                    send(i,"Again?(Y/N)\n",strlen("Again?(Y/N)\n"),0);
+                                    usleep(1);
+                                    send(mem[k].user2_id,"Again?(Y/N)\n",strlen("Again?(Y/N)\n"),0);
+                                    mem[k].request = -2;
+                                    int l;
+                                    for(l=0;l,member_count;l++){
+                                        if(mem[l].id == mem[k].user2_id)
+                                            break;
+                                    }
+                                    mem[l].request = -2;
+                                    continue;
                                 }
-                                mem[l].request = -2;
-                                continue;
+                                else{
+                                    send(i,"NICE! YOU WIN!\nAgain?(Y/N)\n",strlen("NICE! YOU WIN!\nAgain?(Y/N)\n"),0);
+                                    mem[k].win++;
+                                    usleep(1);
+                                    send(mem[k].user2_id,"GAME OVER , YOU LOOSE!\nAgain?(Y/N)\n",strlen("GAME OVER , YOU LOOSE!\nAgain?(Y/N)\n"),0);
+                                    mem[l].loose++;
+                                    mem[k].request = -2;
+                                    int l;
+                                    for(l=0;l,member_count;l++){
+                                        if(mem[l].id == mem[k].user2_id)
+                                            break;
+                                    }
+                                    mem[l].request = -2;
+                                    continue;
+                                }
                             }
                             else if(state < 0){
                                 send(i,"Please choose another position\n",strlen("Please choose another position\n"),0);
