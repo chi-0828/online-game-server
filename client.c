@@ -1,5 +1,123 @@
 #include "game.h"
-
+int check(int peer , char *play_ground){
+    //sleep(1);
+    //15 17 19
+    //37 39 41
+    //59 61 63
+    if(play_ground[14]==play_ground[16]&&play_ground[14]==play_ground[18]&&play_ground[14]!=' ')
+        return -1;
+    if(play_ground[36]==play_ground[38]&&play_ground[38]==play_ground[40]&&play_ground[40]!=' ')
+        return -1;
+    if(play_ground[58]==play_ground[60]&&play_ground[62]==play_ground[60]&&play_ground[60]!=' ')
+        return -1;
+    if(play_ground[14]==play_ground[36]&&play_ground[14]==play_ground[58]&&play_ground[14]!=' ')
+        return -1;
+    if(play_ground[38]==play_ground[16]&&play_ground[16]==play_ground[60]&&play_ground[16]!=' ')
+        return -1;
+    if(play_ground[18]==play_ground[40]&&play_ground[18]==play_ground[62]&&play_ground[18]!=' ')
+        return -1;
+    if(play_ground[14]==play_ground[38]&&play_ground[38]==play_ground[62]&&play_ground[14]!=' ')
+        return -1;
+    if(play_ground[18]==play_ground[38]&&play_ground[38]==play_ground[58]&&play_ground[18]!=' ')
+        return -1;
+    if(play_ground[14]!= ' '&&play_ground[16] != ' '&&play_ground[18] != ' '&&play_ground[36] != ' '&& play_ground[38] != ' '&&play_ground[40] != ' '&& play_ground[58] != ' ' && play_ground[60] != ' '&&play_ground[62]!=' ')
+        return -1;
+    if((play_ground[16]==play_ground[18]&&play_ground[14]==' '&&play_ground[16]!=' ' )|| (play_ground[36]==play_ground[58]&&play_ground[14]==' '&&play_ground[36]!=' ') || (play_ground[38]==play_ground[62]&&play_ground[14]==' '&&play_ground[38]!=' ')){
+        int a = send(peer,"1 1\n",strlen("1 1\n"),0);
+        fprintf(stderr,"1 1\n");
+        return 1;
+    }
+    if((play_ground[14]==play_ground[16]&&play_ground[18]==' '&&play_ground[14]!=' ' )|| (play_ground[38]==play_ground[58]&&play_ground[18]==' '&&play_ground[38]!=' ') || (play_ground[40]==play_ground[62]&&play_ground[18]==' '&&play_ground[40]!=' ')){
+        int a = send(peer,"1 3\n",strlen("1 3\n"),0);
+        fprintf(stderr,"1 3\n");
+        return 1;
+    }
+    if((play_ground[14]==play_ground[18]&&play_ground[16]==' '&&play_ground[14]!=' ' )|| (play_ground[38]==play_ground[60]&&play_ground[16]==' '&&play_ground[38]!=' ')){
+        int a = send(peer,"1 2\n",strlen("1 2\n"),0);
+        fprintf(stderr,"1 2\n");
+        return 1;
+    }
+    if((play_ground[14]==play_ground[36]&&play_ground[58]==' '&&play_ground[14]!=' ' )|| (play_ground[60]==play_ground[62]&&play_ground[58]==' '&&play_ground[60]!=' ') || (play_ground[18]==play_ground[38]&&play_ground[58]==' '&&play_ground[18]!=' ')){
+        int a = send(peer,"3 1\n",strlen("3 1\n"),0);
+        fprintf(stderr,"3 1\n");
+        return 1;
+    }
+    if((play_ground[18]==play_ground[40]&&play_ground[62]==' '&&play_ground[18]!=' ' )|| (play_ground[58]==play_ground[60]&&play_ground[62]==' '&&play_ground[58]!=' ') || (play_ground[14]==play_ground[38]&&play_ground[62]==' '&&play_ground[14]!=' ')){
+        int a = send(peer,"3 3\n",strlen("3 3\n"),0);
+        fprintf(stderr,"3 3\n");
+        return 1;
+    }
+    if((play_ground[58]==play_ground[62]&&play_ground[60]==' '&&play_ground[58]!=' ' )|| (play_ground[16]==play_ground[38]&&play_ground[60]==' '&&play_ground[16]!=' ')){
+        int a = send(peer,"3 2\n",strlen("3 2\n"),0);
+        fprintf(stderr,"3 2\n");
+        return 1;
+    }
+    if((play_ground[14]==play_ground[58]&&play_ground[36]==' '&&play_ground[14]!=' ' )|| (play_ground[38]==play_ground[40]&&play_ground[36]==' '&&play_ground[38]!=' ')){
+        int a = send(peer,"2 1\n",strlen("2 1\n"),0);
+        fprintf(stderr,"2 1\n");
+        return 1;
+    }
+    if((play_ground[18]==play_ground[62]&&play_ground[40]==' '&&play_ground[18]!=' ' )|| (play_ground[36]==play_ground[38]&&play_ground[40]==' '&&play_ground[36]!=' ')){
+        int a = send(peer,"2 3\n",strlen("2 3\n"),0);
+        fprintf(stderr,"2 3\n");
+        return 1;
+    }
+    if((play_ground[14]==play_ground[32]&&play_ground[38]==' '&&play_ground[14]!=' ' )|| (play_ground[60]==play_ground[16]&&play_ground[38]==' '&&play_ground[16]!=' ') 
+            || (play_ground[18]==play_ground[58]&&play_ground[38]==' '&&play_ground[18]!=' ') || (play_ground[40]==play_ground[36]&&play_ground[38]==' '&&play_ground[40]!=' ')){
+        int a = send(peer,"2 2\n",strlen("2 2\n"),0);
+        fprintf(stderr,"2 2\n");
+        return 1;
+    }
+    //15 17 19
+    //37 39 41
+    //59 61 63
+    if(play_ground[14]==' '){
+        int a = send(peer,"1 1\n",strlen("1 1\n"),0);
+        fprintf(stderr,"1 1\n");
+        return 1;
+    }
+    if(play_ground[16]==' '){
+        int a = send(peer,"1 2\n",strlen("1 2\n"),0);
+        fprintf(stderr,"1 2\n");
+        return 1;
+    }
+    if(play_ground[18]==' '){
+        int a = send(peer,"1 3\n",strlen("1 3\n"),0);
+        fprintf(stderr,"1 3\n");
+        return 1;
+    }
+    if(play_ground[36]==' '){
+        int a = send(peer,"2 1\n",strlen("2 1\n"),0);
+        fprintf(stderr,"2 1\n");
+        return 1;
+    }
+    if(play_ground[38]==' '){
+        int a = send(peer,"2 2\n",strlen("2 2\n"),0);
+        fprintf(stderr,"2 2\n");
+        return 1;
+    }
+    if(play_ground[40]==' '){
+        int a = send(peer,"2 3\n",strlen("2 3\n"),0);
+        fprintf(stderr,"2 3\n");
+        return 1;
+    }
+    if(play_ground[58]==' '){
+        int a = send(peer,"3 1\n",strlen("3 1\n"),0);
+        fprintf(stderr,"3 1\n");
+        return 1;
+    }
+    if(play_ground[60]==' '){
+        int a = send(peer,"3 2\n",strlen("3 2\n"),0);
+        fprintf(stderr,"3 2\n");
+        return 1;
+    }
+    if(play_ground[62]==' '){
+        int a = send(peer,"3 3\n",strlen("3 3\n"),0);
+        fprintf(stderr,"3 3\n");
+        return 1;
+    }
+    return -1;
+}
 void my_wait(size_t secs)
 {
 	usleep(50000);
@@ -76,6 +194,7 @@ int main(int argc, char *argv[]) {
     //red
     char color[100] = {'\0'};
     strcat(color,"\033[0;31m");
+    int AUTO = 0;
     while(1) {
 
         fd_set reads;
@@ -108,6 +227,9 @@ int main(int argc, char *argv[]) {
             }
             if(count>10){
                 int count = 0;
+                int i=0;
+                int a =1;
+                char ground[200] = {'\0'};
                 printf("%s",color); 
                 for(int k =0;k<bytes_received;k++){
                     if(read[k] == '*')
@@ -125,7 +247,13 @@ int main(int argc, char *argv[]) {
                         printf("%s",color); 
                     if(count == 32)
                         printf("\033[0m");
-                }               
+                    if(count<32 && count>0)
+                        ground[i++] = read[k];
+                }           
+                if(AUTO)    
+                    a = check(socket_peer,ground);
+                if(a < 0)
+                    AUTO = 0;
             }
             else if(strncmp(read,"chcolor",7) == 0){
                 char name[10] = {'\0'};
@@ -152,6 +280,16 @@ int main(int argc, char *argv[]) {
                 printf("DONE!!!!!");
                 printf("\033[0m");
                 printf("\n");
+            }
+            else if(strncmp(read,"AUTO",4) == 0){
+                AUTO = 1;
+                printf("\033[0m"); 
+                fwrite(read,bytes_received,1,stderr);  
+            }
+            else if(strncmp(read,"enter \"play!\" to have fun with others\nIf you want to see last game history, enter \"history\"\n",strlen("enter \"play!\" to have fun with others\nIf you want to see last game history, enter \"history\"\n")) == 0){
+                AUTO = 0;
+                printf("\033[0m"); 
+                fwrite(read,bytes_received,1,stderr);  
             }
             else if(strncmp(read,"see you next time\n",strlen("see you next time\n")) == 0){
                 size_t num_secs = 1, max_secs = 20;

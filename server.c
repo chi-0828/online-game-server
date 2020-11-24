@@ -151,6 +151,7 @@ int main() {
         char passward[100];
         int audience;
         int watch;
+        int AUTO;
     };
     M mem[20];
     int member_count =0;
@@ -236,6 +237,7 @@ int main() {
                     mem[member_count].watch = -1;
                     mem[member_count].win = 0;
                     mem[member_count].loose = 0;
+                    mem[member_count].AUTO = 0;
                     memset(mem[member_count].name,'\0',200);
                     memset(mem[member_count].his,'\0',1000);
                     memset(mem[member_count].passward,'\0',100);
@@ -354,6 +356,28 @@ int main() {
                             char mes[100] = {'\0'};
                             sprintf(mes,"chcolor %s\n",name);
                             send(i,mes,strlen(mes),0);
+                            continue;
+                        }
+                        else if(strncmp(read,"auto",4) == 0){
+                            int a=0;
+                            if(mem[k].user2_id>0){
+                                for(int l=0;l<member_count;l++){
+                                    if(mem[l].id == mem[k].user2_id){
+                                        if(mem[l].AUTO == 1){
+                                            send(i,"only one player can use auto mode\n",strlen("only one player can use auto mode\n"),0);
+                                            a = 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if(a == 0){
+                                    send(i,"AUTO,enter auto mode\n",strlen("AUTO,enter auto mode\n"),0);
+                                    mem[k].AUTO = 1;
+                                    continue;
+                                }
+                                continue;
+                            }
+                            send(i,"you are not in game\n",strlen("you are not in game\n"),0);
                             continue;
                         }
                         else if(strncmp(read,"exit!",5) == 0){
@@ -499,6 +523,8 @@ int main() {
                                 continue;
                             }
                             if(state > 0){
+                                mem[k].AUTO = 0;
+                                mem[l].AUTO = 0;
                                 if(state == 9){
                                     send(i,"Again?(Y/N)\n",strlen("Again?(Y/N)\n"),0);
                                     usleep(1);
