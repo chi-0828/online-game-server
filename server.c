@@ -280,6 +280,59 @@ int main() {
                         continue;
                         
                     }
+                    if(strncmp(read,"88",2) == 0){
+                        //strcat(mem[k].name , read);
+                        if(mem[k].user2_id > 0){
+                            if(mem[k].audience > 0){
+                                send(mem[k].audience,"the player exited\n",strlen("the player exited\n"),0);
+                                for(int l=0;l<member_count;l++){
+                                    if(mem[l].id == mem[k].audience){
+                                        mem[l].watch = -1;
+                                        break;
+                                    }
+                                }
+                            }
+                            send(mem[k].user2_id,"opponent exited\nchoose another player\n",strlen("opponent exited\nchoose another player\n"),0);
+                            for(int l=0;l<member_count;l++){
+                                if(mem[l].id == mem[k].user2_id){
+                                    if(mem[l].audience > 0){
+                                        send(mem[l].audience,"the player exited\n",strlen("the player exited\n"),0);
+                                        for(int o=0;o<member_count;o++){
+                                            if(mem[o].id == mem[l].audience){
+                                                mem[o].watch = -1;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    mem[l].user2_id = -1;
+                                    mem[l].request = -1;
+                                    mem[l].court = -1;
+                                    break;
+                                }
+                            }
+                        }
+                        for(int l=0;l<user_count;l++){
+                            if(strncmp(mem[k].name,user[l].name,strlen(user[l].name)) == 0){
+                                user[l].state = 0;
+                                break;
+                            }
+                        }
+                        mem[k].id = -1;
+                        mem[k].login = -1;
+                        mem[k].user2_id = -2;
+                        mem[k].request = -1;
+                        mem[k].court = -1;
+                        mem[k].audience = -1;
+                        mem[k].watch = -1;
+                        mem[k].win = 0;
+                        mem[k].loose = 0;
+                        mem[k].AUTO = 0;
+                        memset(mem[k].name,'\0',200);
+                        memset(mem[k].his,'\0',1000);
+                        memset(mem[k].passward,'\0',100);
+                        continue;
+                        
+                    }
                     //login
                     if(mem[k].login == -1){
                         //strcat(mem[k].name , read);

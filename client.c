@@ -1,4 +1,5 @@
 #include "game.h"
+#include <signal.h>
 int check(int peer , char *play_ground){
     //sleep(1);
     //15 17 19
@@ -123,7 +124,7 @@ void my_wait(size_t secs)
 	usleep(50000);
 
 }
-
+int stop;
 void print_progress(size_t count, size_t max)
 {
 	const char prefix[] = "Progress: [";
@@ -148,8 +149,23 @@ void print_progress(size_t count, size_t max)
     printf("%c[2K\r%s %ld%c\r", 27, buffer,count*10/2,'%');
 	free(buffer);
 }
+void ctr_c_handler(){
+    printf("\nDo you want to exit?(Y/N)");
+    char ans;
+    scanf("%c",&ans);
+    if(ans == 'Y')
+        stop = 1;
+}
 int main(int argc, char *argv[]) {
-
+    stop = 0;
+    struct sigaction action;  
+    //signal(SIGINT,ctr_c_handler);
+    action.sa_handler = ctr_c_handler;    
+    sigemptyset(&action.sa_mask);    
+    action.sa_flags = 0;    
+    /* 设置SA_RESTART属性 */    
+    action.sa_flags |= SA_RESTART;    
+    sigaction(SIGINT, &action, NULL);
     printf("Configuring remote address...\n");
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -196,7 +212,10 @@ int main(int argc, char *argv[]) {
     strcat(color,"\033[0;31m");
     int AUTO = 0;
     while(1) {
-
+        if(stop == 1){
+            send(socket_peer,"88\n",strlen("88/n"),0);
+            break;
+        }
         fd_set reads;
         FD_ZERO(&reads);
         FD_SET(socket_peer, &reads);
@@ -209,8 +228,13 @@ int main(int argc, char *argv[]) {
         timeout.tv_usec = 100000;
 
         if (select(socket_peer+1, &reads, 0, 0, &timeout) < 0) {
-            fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
-            return 1;
+            if(errno != 4){
+                fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
+                return 1;
+            }
+            else{
+                continue;
+            }
         }
 
         if (FD_ISSET(socket_peer, &reads)) {
